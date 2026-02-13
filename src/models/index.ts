@@ -52,6 +52,15 @@ export interface JaxSocialStatsRecord {
   totalRetweets: number;
 }
 
+export interface JaxConfigRecord {
+  configKey: string;
+  predictionInterval: number;
+  enabledCoins: string;
+  enabledFeatures: string;
+  activeModels: string;
+  autonomousMode: string;
+}
+
 // Model factory functions (pass locationId at runtime)
 
 export function Prediction(locationId: string) {
@@ -72,4 +81,8 @@ export function JaxSentence(locationId: string) {
 
 export function JaxSocialStats(locationId: string) {
   return new Model<JaxSocialStatsRecord>("jax_social_stats", locationId);
+}
+
+export function JaxConfig(locationId: string) {
+  return new Model<JaxConfigRecord>("jax_config", locationId);
 }

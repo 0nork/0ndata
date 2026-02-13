@@ -112,8 +112,11 @@ export async function refreshAccessToken(
 export async function getValidAccessToken(
   locationId: string
 ): Promise<string | null> {
+  // PIT token fallback — used by cron jobs and internal API routes
+  const pit = process.env.CRM_PIT_TOKEN;
+
   const stored = await getTokens(locationId);
-  if (!stored) return null;
+  if (!stored) return pit || null;
 
   const BUFFER_MS = 5 * 60 * 1000; // 5 minute buffer
 

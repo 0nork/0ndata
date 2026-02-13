@@ -71,4 +71,18 @@ export function registerJaxSchemas(): void {
       { name: "Total Retweets", key: "total_retweets", dataType: "NUMBER" },
     ],
   });
+
+  registerSchema({
+    name: "JAX Config",
+    key: "jax_config",
+    description: "Live JAX bot configuration",
+    fields: [
+      { name: "Config Key", key: "config_key", dataType: "TEXT", required: true },
+      { name: "Prediction Interval", key: "prediction_interval", dataType: "NUMBER" },
+      { name: "Enabled Coins", key: "enabled_coins", dataType: "TEXT" },
+      { name: "Enabled Features", key: "enabled_features", dataType: "TEXT" },
+      { name: "Active Models", key: "active_models", dataType: "TEXT" },
+      { name: "Autonomous Mode", key: "autonomous_mode", dataType: "TEXT" },
+    ],
+  });
 }
