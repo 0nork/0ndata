@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JAX — AI Prediction Engine Setup</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0a0a0a;
+      color: #fff;
+      min-height: 100vh;
+    }
+
+    .wizard-container {
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 40px 24px;
+    }
+
+    .logo {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .logo h1 {
+      font-size: 2rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+
+    .logo h1 span { color: #22d3ee; }
+    .logo p { color: #6b7280; font-size: 0.875rem; margin-top: 4px; }
+
+    /* Progress bar */
+    .progress-bar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 40px;
+    }
+
+    .progress-segment {
+      flex: 1;
+      height: 4px;
+      border-radius: 2px;
+      background: #1f2937;
+      transition: background 0.3s;
+    }
+
+    .progress-segment.active { background: #22d3ee; }
+    .progress-segment.done { background: #06b6d4; }
+
+    /* Steps */
+    .step {
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .step.active { display: block; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .step h2 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .step .subtitle {
+      color: #9ca3af;
+      font-size: 0.9rem;
+      margin-bottom: 24px;
+      line-height: 1.5;
+    }
+
+    /* Coin selector */
+    .coin-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .coin-card {
+      padding: 16px;
+      border: 2px solid #1f2937;
+      border-radius: 12px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: #111;
+    }
+
+    .coin-card:hover { border-color: #374151; }
+
+    .coin-card.selected {
+      border-color: #22d3ee;
+      background: rgba(34, 211, 238, 0.05);
+    }
+
+    .coin-card .symbol {
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .coin-card .name {
+      font-size: 0.75rem;
+      color: #6b7280;
+    }
+
+    /* Interval selector */
+    .interval-options {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .interval-option {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px;
+      border: 2px solid #1f2937;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: #111;
+    }
+
+    .interval-option:hover { border-color: #374151; }
+
+    .interval-option.selected {
+      border-color: #22d3ee;
+      background: rgba(34, 211, 238, 0.05);
+    }
+
+    .interval-option .label { font-weight: 600; }
+    .interval-option .desc { font-size: 0.8rem; color: #6b7280; margin-top: 2px; }
+    .interval-option .badge {
+      font-size: 0.75rem;
+      padding: 4px 10px;
+      border-radius: 20px;
+      background: #1f2937;
+      color: #9ca3af;
+    }
+
+    .interval-option.selected .badge {
+      background: rgba(34, 211, 238, 0.15);
+      color: #22d3ee;
+    }
+
+    /* Feature list */
+    .feature-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .feature-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 16px;
+      border-radius: 12px;
+      background: #111;
+      border: 1px solid #1f2937;
+    }
+
+    .feature-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      flex-shrink: 0;
+    }
+
+    .feature-item h3 { font-size: 0.95rem; font-weight: 600; }
+    .feature-item p { font-size: 0.8rem; color: #6b7280; margin-top: 2px; }
+
+    /* Summary */
+    .summary-card {
+      padding: 24px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, rgba(34, 211, 238, 0.08), rgba(139, 92, 246, 0.08));
+      border: 1px solid rgba(34, 211, 238, 0.2);
+      margin-bottom: 24px;
+    }
+
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .summary-row:last-child { border-bottom: none; }
+    .summary-row .label { color: #9ca3af; font-size: 0.85rem; }
+    .summary-row .value { font-weight: 600; font-size: 0.85rem; }
+
+    /* Buttons */
+    .btn-row {
+      display: flex;
+      gap: 12px;
+      margin-top: 32px;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 14px 24px;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+    }
+
+    .btn-secondary {
+      background: #1f2937;
+      color: #9ca3af;
+    }
+
+    .btn-secondary:hover { background: #374151; color: #fff; }
+
+    .btn-primary {
+      background: #22d3ee;
+      color: #0a0a0a;
+    }
+
+    .btn-primary:hover { background: #06b6d4; }
+
+    .btn-launch {
+      background: linear-gradient(135deg, #22d3ee, #8b5cf6);
+      color: #fff;
+      font-size: 1.1rem;
+      padding: 16px 32px;
+    }
+
+    .btn-launch:hover { opacity: 0.9; }
+
+    /* Success screen */
+    .success-screen {
+      text-align: center;
+      padding: 60px 0;
+    }
+
+    .success-screen .icon {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: rgba(34, 211, 238, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 24px;
+      font-size: 2rem;
+    }
+
+    .success-screen h2 { font-size: 1.75rem; margin-bottom: 8px; }
+    .success-screen p { color: #6b7280; max-width: 400px; margin: 0 auto; }
+
+    .loading-spinner {
+      width: 24px;
+      height: 24px;
+      border: 3px solid rgba(34, 211, 238, 0.2);
+      border-top-color: #22d3ee;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      display: inline-block;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <div class="wizard-container">
+    <!-- Logo -->
+    <div class="logo">
+      <h1><span>JAX</span> Prediction Engine</h1>
+      <p>Powered by 0nData</p>
+    </div>
+
+    <!-- Progress -->
+    <div class="progress-bar">
+      <div class="progress-segment active" id="seg-1"></div>
+      <div class="progress-segment" id="seg-2"></div>
+      <div class="progress-segment" id="seg-3"></div>
+      <div class="progress-segment" id="seg-4"></div>
+      <div class="progress-segment" id="seg-5"></div>
+    </div>
+
+    <!-- STEP 1: Welcome -->
+    <div class="step active" id="step-1">
+      <h2>Welcome to JAX</h2>
+      <p class="subtitle">
+        JAX is an autonomous AI crypto prediction engine. It starts simple — making predictions for a few coins every 15 minutes — and <strong>evolves</strong> as it hits milestones. New coins, faster intervals, more models, and new capabilities unlock over time.
+      </p>
+
+      <div class="feature-list">
+        <div class="feature-item">
+          <div class="feature-icon" style="background: rgba(34, 211, 238, 0.1); color: #22d3ee;">&#x1F52E;</div>
+          <div>
+            <h3>AI Predictions</h3>
+            <p>Multi-model consensus across GPT-4, Claude, and Gemini</p>
+          </div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon" style="background: rgba(139, 92, 246, 0.1); color: #8b5cf6;">&#x1F513;</div>
+          <div>
+            <h3>52 Unlocks</h3>
+            <p>JAX gains new abilities as it hits prediction milestones</p>
+          </div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon" style="background: rgba(16, 185, 129, 0.1); color: #10b981;">&#x1F4AC;</div>
+          <div>
+            <h3>Sentence Generation</h3>
+            <p>Earns the ability to express itself through generated sentences</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="nextStep()">Get Started</button>
+      </div>
+    </div>
+
+    <!-- STEP 2: Choose Coins -->
+    <div class="step" id="step-2">
+      <h2>Choose Starting Coins</h2>
+      <p class="subtitle">Select which cryptocurrencies JAX should predict. You start with 3 coins — more unlock as JAX hits milestones.</p>
+
+      <div class="coin-grid">
+        <div class="coin-card selected" data-coin="BTC" onclick="toggleCoin(this)">
+          <div class="symbol">BTC</div>
+          <div class="name">Bitcoin</div>
+        </div>
+        <div class="coin-card selected" data-coin="ETH" onclick="toggleCoin(this)">
+          <div class="symbol">ETH</div>
+          <div class="name">Ethereum</div>
+        </div>
+        <div class="coin-card selected" data-coin="SOL" onclick="toggleCoin(this)">
+          <div class="symbol">SOL</div>
+          <div class="name">Solana</div>
+        </div>
+        <div class="coin-card" data-coin="DOGE" onclick="toggleCoin(this)">
+          <div class="symbol" style="opacity:0.3">DOGE</div>
+          <div class="name" style="opacity:0.3">Unlocks at 5-streak</div>
+        </div>
+        <div class="coin-card" data-coin="ADA" onclick="toggleCoin(this)">
+          <div class="symbol" style="opacity:0.3">ADA</div>
+          <div class="name" style="opacity:0.3">Unlocks at 50 preds</div>
+        </div>
+        <div class="coin-card" data-coin="AVAX" onclick="toggleCoin(this)">
+          <div class="symbol" style="opacity:0.3">AVAX</div>
+          <div class="name" style="opacity:0.3">Unlocks at 50 preds</div>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="prevStep()">Back</button>
+        <button class="btn btn-primary" onclick="nextStep()">Continue</button>
+      </div>
+    </div>
+
+    <!-- STEP 3: Choose Interval -->
+    <div class="step" id="step-3">
+      <h2>Prediction Interval</h2>
+      <p class="subtitle">How often should JAX make predictions? Faster intervals unlock as JAX proves its accuracy.</p>
+
+      <div class="interval-options">
+        <div class="interval-option selected" data-interval="15" onclick="selectInterval(this)">
+          <div>
+            <div class="label">Every 15 minutes</div>
+            <div class="desc">Standard pace — great for getting started</div>
+          </div>
+          <div class="badge">Default</div>
+        </div>
+        <div class="interval-option" data-interval="10" style="opacity:0.4; pointer-events:none;">
+          <div>
+            <div class="label">Every 10 minutes</div>
+            <div class="desc">Unlocks at 20 predictions</div>
+          </div>
+          <div class="badge">Locked</div>
+        </div>
+        <div class="interval-option" data-interval="5" style="opacity:0.4; pointer-events:none;">
+          <div>
+            <div class="label">Every 5 minutes</div>
+            <div class="desc">Unlocks at 100 predictions</div>
+          </div>
+          <div class="badge">Locked</div>
+        </div>
+        <div class="interval-option" data-interval="1" style="opacity:0.4; pointer-events:none;">
+          <div>
+            <div class="label">Every minute</div>
+            <div class="desc">Unlocks at 1,000 predictions</div>
+          </div>
+          <div class="badge">Locked</div>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="prevStep()">Back</button>
+        <button class="btn btn-primary" onclick="nextStep()">Continue</button>
+      </div>
+    </div>
+
+    <!-- STEP 4: Review & Confirm -->
+    <div class="step" id="step-4">
+      <h2>Review Your Setup</h2>
+      <p class="subtitle">Here's what JAX will start with. Everything evolves as milestones are hit.</p>
+
+      <div class="summary-card">
+        <div class="summary-row">
+          <span class="label">Starting Coins</span>
+          <span class="value" id="summary-coins">BTC, ETH, SOL</span>
+        </div>
+        <div class="summary-row">
+          <span class="label">Prediction Interval</span>
+          <span class="value" id="summary-interval">Every 15 minutes</span>
+        </div>
+        <div class="summary-row">
+          <span class="label">AI Models</span>
+          <span class="value">GPT-4, Claude, Gemini</span>
+        </div>
+        <div class="summary-row">
+          <span class="label">Unlocks Available</span>
+          <span class="value">52 milestones</span>
+        </div>
+        <div class="summary-row">
+          <span class="label">Data Storage</span>
+          <span class="value">CRM Custom Objects</span>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="prevStep()">Back</button>
+        <!--
+          TRIGGER LINK: Replace this href with your CRM trigger link URL.
+          The trigger link fires the "JAX Onboarding Setup" workflow.
+          Pass selected coins and interval as query params.
+        -->
+        <a id="launch-btn" class="btn btn-launch" style="text-decoration:none; text-align:center; flex:2;" onclick="launchJax()">
+          Launch JAX
+        </a>
+      </div>
+    </div>
+
+    <!-- STEP 5: Success -->
+    <div class="step" id="step-5">
+      <div class="success-screen">
+        <div class="icon" id="success-icon">
+          <div class="loading-spinner"></div>
+        </div>
+        <h2 id="success-title">Initializing JAX...</h2>
+        <p id="success-text">Setting up your prediction engine. This takes about 10 seconds.</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentStep = 1;
+    const totalSteps = 5;
+    let selectedCoins = ['BTC', 'ETH', 'SOL'];
+    let selectedInterval = 15;
+
+    // ============================
+    // CONFIGURATION — SET THESE
+    // ============================
+
+    // Replace with your actual CRM trigger link URL for the onboarding workflow
+    const TRIGGER_LINK_BASE = '{{trigger_link_url}}';
+
+    // Replace with your CRM location ID
+    const LOCATION_ID = '2ro22dYDzTD41y7R5VWi';
+
+    // ============================
+
+    function updateProgress() {
+      for (let i = 1; i <= totalSteps; i++) {
+        const seg = document.getElementById(`seg-${i}`);
+        seg.classList.remove('active', 'done');
+        if (i < currentStep) seg.classList.add('done');
+        if (i === currentStep) seg.classList.add('active');
+      }
+    }
+
+    function showStep(n) {
+      document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+      document.getElementById(`step-${n}`).classList.add('active');
+      updateProgress();
+    }
+
+    function nextStep() {
+      if (currentStep < totalSteps) {
+        currentStep++;
+        showStep(currentStep);
+
+        // Update summary on step 4
+        if (currentStep === 4) {
+          document.getElementById('summary-coins').textContent = selectedCoins.join(', ');
+          document.getElementById('summary-interval').textContent = `Every ${selectedInterval} minutes`;
+        }
+      }
+    }
+
+    function prevStep() {
+      if (currentStep > 1) {
+        currentStep--;
+        showStep(currentStep);
+      }
+    }
+
+    function toggleCoin(el) {
+      const coin = el.dataset.coin;
+      // Only allow toggling unlocked coins (BTC, ETH, SOL)
+      if (['BTC', 'ETH', 'SOL'].includes(coin)) {
+        el.classList.toggle('selected');
+        if (el.classList.contains('selected')) {
+          if (!selectedCoins.includes(coin)) selectedCoins.push(coin);
+        } else {
+          selectedCoins = selectedCoins.filter(c => c !== coin);
+        }
+        // Require at least 1 coin
+        if (selectedCoins.length === 0) {
+          el.classList.add('selected');
+          selectedCoins.push(coin);
+        }
+      }
+    }
+
+    function selectInterval(el) {
+      document.querySelectorAll('.interval-option').forEach(o => o.classList.remove('selected'));
+      el.classList.add('selected');
+      selectedInterval = Number(el.dataset.interval);
+    }
+
+    function launchJax() {
+      currentStep = 5;
+      showStep(5);
+
+      // Build trigger link URL with params
+      const params = new URLSearchParams({
+        coins: selectedCoins.join(','),
+        interval: selectedInterval,
+        locationId: LOCATION_ID,
+      });
+
+      const triggerUrl = `${TRIGGER_LINK_BASE}?${params.toString()}`;
+
+      // Fire the trigger link (opens in background)
+      fetch(triggerUrl, { mode: 'no-cors' }).catch(() => {});
+
+      // Show success after delay
+      setTimeout(() => {
+        document.getElementById('success-icon').innerHTML = '&#x2705;';
+        document.getElementById('success-title').textContent = 'JAX is Live!';
+        document.getElementById('success-text').textContent =
+          `Predictions will start in ${selectedInterval} minutes for ${selectedCoins.join(', ')}. Check your dashboard for real-time updates.`;
+      }, 3000);
+    }
+  </script>
+</body>
+</html>
