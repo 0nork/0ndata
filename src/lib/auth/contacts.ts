@@ -3,7 +3,7 @@
 import { crmRequest } from "@/lib/bridge/client";
 import { hashPassword, verifyPassword } from "./password";
 
-const PASSWORD_FIELD_KEY = "ondata_password_hash";
+const PASSWORD_FIELD_KEY = "contact.0ndata_password_hash";
 
 // Default location for user management
 // In Marketplace mode, this comes from the installed location
@@ -22,15 +22,16 @@ interface CRMContact {
   name?: string;
   firstName?: string;
   lastName?: string;
-  customFields?: { id: string; key: string; value: string }[];
+  customFields?: { id: string; key?: string; value: string; field_value?: string }[];
 }
 
 interface CRMContactResponse {
   contact: CRMContact;
 }
 
-interface CRMSearchResponse {
+interface CRMContactListResponse {
   contacts: CRMContact[];
+  meta?: { total: number };
 }
 
 export async function createUser(
@@ -78,37 +79,51 @@ export async function findUserByEmail(
 ): Promise<(AppUser & { passwordHash: string }) | null> {
   const locId = locationId || DEFAULT_LOCATION_ID;
 
-  const res = await crmRequest<CRMSearchResponse>({
-    method: "POST",
-    path: "/contacts/search",
+  // Use GET /contacts/ with query param — search endpoint doesn't work reliably
+  const res = await crmRequest<CRMContactListResponse>({
+    method: "GET",
+    path: "/contacts/",
     locationId: locId,
-    body: {
+    query: {
       locationId: locId,
-      filters: [
-        {
-          field: "email",
-          operator: "eq",
-          value: email,
-        },
-      ],
+      query: email,
+      limit: "1",
     },
   });
 
   if (!res.ok || !res.data.contacts?.length) return null;
 
   const contact = res.data.contacts[0];
-  const hashField = contact.customFields?.find(
-    (f) => f.key === PASSWORD_FIELD_KEY
+  // Verify exact email match (query is fuzzy)
+  if (contact.email?.toLowerCase() !== email.toLowerCase()) return null;
+
+  // Fetch full contact to get custom fields (list endpoint doesn't include them)
+  const fullRes = await crmRequest<CRMContactResponse>({
+    method: "GET",
+    path: `/contacts/${contact.id}`,
+    locationId: locId,
+  });
+
+  if (!fullRes.ok) return null;
+
+  const fullContact = fullRes.data.contact;
+  // Find password hash — check both key formats (fieldKey and id)
+  const hashField = fullContact.customFields?.find(
+    (f) =>
+      f.id === PASSWORD_FIELD_KEY ||
+      f.key === PASSWORD_FIELD_KEY ||
+      f.id?.includes("0ndata_password_hash") ||
+      f.key?.includes("0ndata_password_hash")
   );
 
   return {
-    contactId: contact.id,
-    email: contact.email,
+    contactId: fullContact.id,
+    email: fullContact.email,
     name:
-      contact.name ||
-      [contact.firstName, contact.lastName].filter(Boolean).join(" "),
+      fullContact.name ||
+      [fullContact.firstName, fullContact.lastName].filter(Boolean).join(" "),
     locationId: locId,
-    passwordHash: hashField?.value || "",
+    passwordHash: hashField?.value || hashField?.field_value || "",
   };
 }
 
