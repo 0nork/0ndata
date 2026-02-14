@@ -107,13 +107,15 @@ export async function findUserByEmail(
   if (!fullRes.ok) return null;
 
   const fullContact = fullRes.data.contact;
-  // Find password hash — check both key formats (fieldKey and id)
+  // Find password hash — CRM returns raw field ID, not fieldKey
+  // Match by known field ID env var, or detect bcrypt hash pattern
+  const passwordFieldId = process.env.CRM_PASSWORD_FIELD_ID || "";
   const hashField = fullContact.customFields?.find(
     (f) =>
+      (passwordFieldId && f.id === passwordFieldId) ||
       f.id === PASSWORD_FIELD_KEY ||
       f.key === PASSWORD_FIELD_KEY ||
-      f.id?.includes("0ndata_password_hash") ||
-      f.key?.includes("0ndata_password_hash")
+      (typeof f.value === "string" && f.value.startsWith("$2"))
   );
 
   return {
