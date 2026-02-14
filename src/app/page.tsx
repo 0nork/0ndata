@@ -10,7 +10,13 @@ export default function LandingPage() {
           <div className="text-2xl font-bold">
             <span className="text-cyan-400">0n</span>Data
           </div>
-          <div className="flex gap-4">
+          <div className="flex items-center gap-4">
+            <Link
+              href="/how-it-works"
+              className="px-4 py-2 text-sm text-gray-300 hover:text-white transition"
+            >
+              How It Works
+            </Link>
             <Link
               href="/auth/login"
               className="px-4 py-2 text-sm text-gray-300 hover:text-white transition"
@@ -195,9 +201,18 @@ export default function LandingPage() {
             RocketOpp LLC
           </div>
           <div className="flex gap-6">
+            <Link href="/how-it-works" className="hover:text-gray-300 transition">
+              How It Works
+            </Link>
+            <Link href="/dashboard" className="hover:text-gray-300 transition">
+              Dashboard
+            </Link>
             <Link href="/settings" className="hover:text-gray-300 transition">
               Settings
             </Link>
+            <a href="mailto:mike@rocketopp.com" className="hover:text-gray-300 transition">
+              Support
+            </a>
           </div>
         </div>
       </footer>
