@@ -14,15 +14,15 @@ export async function GET(request: NextRequest) {
   const code = searchParams.get("code");
   const state = searchParams.get("state");
 
-  if (!code || !state) {
+  if (!code) {
     return NextResponse.json(
-      { error: "Missing code or state parameter" },
+      { error: "Missing code parameter" },
       { status: 400 }
     );
   }
 
-  // Validate CSRF state
-  if (!validateState(state)) {
+  // Validate CSRF state only if present (marketplace installs skip state)
+  if (state && !validateState(state)) {
     return NextResponse.json(
       { error: "Invalid or expired state parameter" },
       { status: 400 }
@@ -34,6 +34,9 @@ export async function GET(request: NextRequest) {
     const tokens = await exchangeCodeForTokens(code);
     const locationId = tokens.locationId || tokens.companyId || "";
 
+    console.log("[0nData] OAuth callback — locationId:", locationId);
+    console.log("[0nData] Token scopes:", tokens.scope);
+
     if (!locationId) {
       return NextResponse.json(
         { error: "No location ID returned from OAuth" },
@@ -41,24 +44,48 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Save tokens
-    await saveTokens({
-      locationId,
-      accessToken: tokens.access_token,
-      refreshToken: tokens.refresh_token,
-      expiresAt: Date.now() + tokens.expires_in * 1000,
-    });
+    // Save tokens (file-based + /tmp fallback for serverless)
+    try {
+      await saveTokens({
+        locationId,
+        accessToken: tokens.access_token,
+        refreshToken: tokens.refresh_token,
+        expiresAt: Date.now() + tokens.expires_in * 1000,
+      });
+    } catch (saveErr) {
+      // Token save may fail on serverless — log but continue
+      console.warn("[0nData] Token save warning:", saveErr);
+    }
 
     // Install JAX schemas for this location
-    const report = await installSchemas(locationId);
-    console.log("Schema install report:", JSON.stringify(report));
+    let report;
+    try {
+      report = await installSchemas(locationId);
+      console.log("[0nData] Schema install report:", JSON.stringify(report));
+    } catch (schemaErr) {
+      console.error("[0nData] Schema install error:", schemaErr);
+      // Continue to redirect — schemas can be installed later
+    }
 
     // Redirect to settings/dashboard
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-    return NextResponse.redirect(`${appUrl}/settings?installed=true`);
+    const params = new URLSearchParams({
+      installed: "true",
+      location: locationId,
+    });
+    if (report) {
+      params.set("created", String(report.created.length));
+      params.set("skipped", String(report.skipped.length));
+    }
+    return NextResponse.redirect(`${appUrl}/settings?${params.toString()}`);
   } catch (err) {
+    console.error("[0nData] OAuth callback error:", err);
     const message =
       err instanceof Error ? err.message : "OAuth callback failed";
-    return NextResponse.json({ error: message }, { status: 500 });
+    // Redirect to settings with error instead of JSON response
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    return NextResponse.redirect(
+      `${appUrl}/settings?error=${encodeURIComponent(message)}`
+    );
   }
 }

@@ -18,9 +18,13 @@ export interface CRMTokenResponse {
 const REQUIRED_SCOPES = [
   "contacts.readonly",
   "contacts.write",
-  "objects.readonly",
-  "objects.write",
+  "objects/schema.readonly",
+  "objects/schema.write",
+  "objects/record.readonly",
+  "objects/record.write",
   "locations.readonly",
+  "locations/customFields.readonly",
+  "locations/customFields.write",
 ];
 
 // CSRF state store (in-memory, fine for single-process)
